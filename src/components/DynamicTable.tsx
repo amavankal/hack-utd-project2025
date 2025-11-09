@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import ToggleButton from './ToggleButton';
 import DollarInputField from './DollarInputField';
 import ExpenseInputField from './ExpenseInputField';
 import AddExpenseButton from './AddExpenseButton';
 import MonthlyInputField from './MonthlyInputField';
+import GenerateResultsButton from './GenerateResultsButton';
 
 type ExpenseRow = {
     id: number;
@@ -24,6 +25,10 @@ function DynamicTable() {
     const [tableData, setTableData] = useState(DEFAULT_EXPENSES);
     const [addRowValue, setAddRowValue] = useState("");
     const [monthlySalary, setMonthlySalary] = useState(0);
+    
+    // for generate results
+    const [needSum, setNeedSum] = useState(0);
+    const [expenseSum, setExpenseSum] = useState(0);
 
     const textFieldRef = useRef<HTMLInputElement>(null);
 
@@ -71,12 +76,45 @@ function DynamicTable() {
     // handler for monthly salary update
     const handleSalaryChange = (newValue: number) => {
         setMonthlySalary(newValue);
-        console.log("salary updated to " + monthlySalary);
+    }
+
+    // for salary: runs when monthlySalary changes
+    useEffect(() => {
+            console.log("salary updated to " + monthlySalary);
+        }, [monthlySalary]);
+
+    // handler for generate results button
+    const handleGenerateResults = () => {
+        // no need to validate data
+        let needSumTemp = 0;
+        let expenseSumTemp = 0;
+
+        tableData.map( (row) => {
+            expenseSumTemp += row.price;
+            if (row.isNeed)
+                needSumTemp += row.price;
+        });
+
+        // update state variables
+        setNeedSum(needSumTemp);
+        setExpenseSum(expenseSumTemp);
+
+        console.log("Expense Sum = " + expenseSum);
+        console.log("Need sum = " + needSum);
+        console.log("Leftover money = " + (monthlySalary - expenseSum));
+
+        // show results component
+        let x = document.getElementById("ResultsDiv");
+        if (x !== null)
+            if (x.style.display === "none")
+                    x.style.display = "block";
+
     }
 
     return (
     <>
         <div>
+            <p id="addSalaryPrompt" className="font-bold">Input your monthly salary:</p>
             <MonthlyInputField
                 value={monthlySalary}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSalaryChange(Number(e.target.value) || 0)}
@@ -134,6 +172,37 @@ function DynamicTable() {
                     </tr>
                 </tbody>
             </table>
+        </div>
+        <div>
+            <GenerateResultsButton
+                onClick={() => handleGenerateResults()}
+            />
+        </div>
+        <div id="ResultsDiv" style={{display: 'none'}}>
+            <table id="expenseInputTable">
+                <thead>
+                    <tr>
+                        <th>Expense Type</th>
+                        <th>Percentage of income spent one expense</th>
+                        <th>Need or want</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {tableData.map( (row) => (
+                        <tr key={row.id}>
+                            <td>{row.expenseName}</td>
+                            <td>
+                                {(row.price / monthlySalary * 100).toFixed(2)} %
+                            </td>
+                            <td> {row.isNeed ? "Need" : "Want"}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <p>
+                Leftover income = {(monthlySalary - expenseSum)} <br />
+                {(expenseSum / monthlySalary * 100).toFixed(2)}% of your income was spent.
+            </p>
         </div>
         
     </>
