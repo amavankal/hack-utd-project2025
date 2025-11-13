@@ -1,0 +1,5 @@
+# dependency directory - run npm install on local
+node_modules/
+
+# macOS system files
+**/.DS_Store
